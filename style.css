@@ -1,0 +1,319 @@
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    margin: 0;
+    padding: 0;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #111;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* BARRA SUPERIOR DE CONTROLES */
+#controls-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 54px;
+    background: linear-gradient(180deg, #222 0%, #141414 100%);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    border-bottom: 2px solid #333;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+}
+
+.ctrl-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn {
+    background: #2c2c2e;
+    color: #fff;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+    .btn:active {
+        background: #444;
+        transform: scale(0.96);
+    }
+
+    .btn.active {
+        background: #007aff;
+        border-color: #0056b3;
+        color: #fff;
+    }
+
+.label-text {
+    color: #aaa;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* DROPDOWN DE INSTRUMENTOS ESTILIZADO */
+.inst-select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: #1c1c1e;
+    border: 1px solid #007aff;
+    border-radius: 8px;
+    padding: 0 4px;
+    box-shadow: 0 0 8px rgba(0, 122, 255, 0.3);
+}
+
+    .inst-select-wrapper select {
+        background: transparent;
+        color: #fff;
+        font-size: 13px;
+        font-weight: bold;
+        border: none;
+        outline: none;
+        height: 36px;
+        padding: 0 24px 0 8px;
+        cursor: pointer;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+
+    .inst-select-wrapper option {
+        background-color: #222;
+        color: #fff;
+        font-size: 14px;
+    }
+
+    .inst-select-wrapper::after {
+        content: '▼';
+        font-size: 10px;
+        color: #007aff;
+        position: absolute;
+        right: 8px;
+        pointer-events: none;
+    }
+
+.nav-inst-btn {
+    background: #252528;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 6px;
+    width: 32px;
+    height: 36px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .nav-inst-btn:active {
+        background: #007aff;
+    }
+
+/* SWITCH SLIDER */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #444;
+    transition: .2s;
+    border-radius: 24px;
+    border: 1px solid #666;
+}
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .2s;
+        border-radius: 50%;
+    }
+
+input:checked + .slider {
+    background-color: #34c759;
+    border-color: #28a745;
+}
+
+    input:checked + .slider:before {
+        transform: translateX(20px);
+    }
+
+/* AVISO DE ORIENTAÇÃO VERTICAL */
+#orient-warning {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: #000;
+    color: #fff;
+    z-index: 999;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+}
+
+    #orient-warning svg {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 15px;
+        fill: #fff;
+        animation: rotate 2s infinite ease-in-out;
+    }
+
+@keyframes rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    50% {
+        transform: rotate(90deg);
+    }
+
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@media (orientation: portrait) {
+    #orient-warning {
+        display: flex;
+    }
+}
+
+/* RECIPIENTE DO PIANO */
+#piano-container {
+    position: absolute;
+    top: 54px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    width: 100%;
+    height: calc(100% - 54px);
+    background: #000;
+}
+
+/* TECLAS */
+.key {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 16px;
+    box-sizing: border-box;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+    .key.white {
+        background: linear-gradient(to bottom, #eeeeee 0%, #ffffff 100%);
+        border: 1px solid #bbb;
+        border-top: none;
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+        box-shadow: inset 0 -5px 10px rgba(0,0,0,0.15), 0 2px 5px rgba(0,0,0,0.3);
+        z-index: 1;
+        height: 100%;
+    }
+
+        .key.white.active {
+            background: #ddd;
+            box-shadow: inset 0 -2px 5px rgba(0,0,0,0.2);
+            transform: translateY(2px);
+        }
+
+    .key.black {
+        background: linear-gradient(to bottom, #333 0%, #000 100%);
+        border: 1px solid #000;
+        border-bottom-left-radius: 4px;
+        border-bottom-right-radius: 4px;
+        box-shadow: 2px 4px 6px rgba(0,0,0,0.5);
+        z-index: 2;
+        height: 60%;
+        margin-left: calc(var(--black-width) / -2);
+        margin-right: calc(var(--black-width) / -2);
+        padding-bottom: 12px;
+    }
+
+        .key.black.active {
+            background: #222;
+            box-shadow: 1px 2px 3px rgba(0,0,0,0.8);
+        }
+
+/* ROTULOS DAS NOTAS */
+.note-label {
+    pointer-events: none;
+    font-size: 20px;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: none;
+}
+
+.show-labels .note-label {
+    display: block;
+}
+
+.key.white .note-label {
+    color: #111;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.key.black .note-label {
+    color: #fff;
+    font-size: 14px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 3px 6px;
+    border-radius: 4px;
+    border: 1px solid #555;
+}
+

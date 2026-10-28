@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Teclado Virtual com Timbres e Bateria</title>
+    <link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+
+    <div id="orient-warning">
+        <svg viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z" /></svg>
+        <h2>Por favor, rode o telemóvel para a horizontal</h2>
+    </div>
+
+    <div id="controls-bar">
+        <!-- NAVEGAÇÃO DE ALTURA (OITAVA BASE) -->
+        <div class="ctrl-group">
+            <button class="btn" id="btn-octave-down">&lt;</button>
+            <button class="btn" id="btn-octave-up">&gt;</button>
+        </div>
+
+        <!-- DROPDOWN DE TIMBRES -->
+        <div class="ctrl-group">
+            <button class="nav-inst-btn" id="prev-inst">&lt;</button>
+            <div class="inst-select-wrapper">
+                <select id="inst-select">
+                    <optgroup label="🎹 PIANOS & TECLADOS">
+                        <option value="0">01. Piano Acústico</option>
+                        <option value="1">02. Piano Elétrico (Rhodes)</option>
+                        <option value="2">03. Cravo Clássico</option>
+                        <option value="4">04. Caixinha de Música</option>
+                        <option value="3">05. Órgão Hammond</option>
+                    </optgroup>
+                    <optgroup label="🎸 CORDAS, GUITARRAS & BAIXO">
+                        <option value="5">06. Violão de Nylon</option>
+                        <option value="6">07. Violão de Aço</option>
+                        <option value="7">08. Guitarra Limpa</option>
+                        <option value="8">09. Guitarra com Distorção</option>
+                        <option value="9">10. Baixo Elétrico</option>
+                        <option value="10">11. Orquestra de Cordas</option>
+                        <option value="11">12. Harpa Angelical</option>
+                    </optgroup>
+                    <optgroup label="🎷 SOPROS & METAIS">
+                        <option value="12">13. Flauta Doce</option>
+                        <option value="13">14. Saxofone Alto</option>
+                        <option value="14">15. Trompete de Metal</option>
+                        <option value="15">16. Gaita de Boca</option>
+                    </optgroup>
+                    <optgroup label="🥁 BATERIAS & PERCUSSÃO">
+                        <option value="16">17. Bateria Acústica</option>
+                        <option value="17">18. Bateria Eletrônica 808</option>
+                        <option value="18">19. Xilofone / Marimba</option>
+                        <option value="19">20. Steel Drum (Caribe)</option>
+                    </optgroup>
+                    <optgroup label="👾 SINTETIZADORES & RETRÔ">
+                        <option value="20">21. 8-Bit Game Boy</option>
+                        <option value="21">22. Synth Pad (Névoa)</option>
+                    </optgroup>
+                </select>
+            </div>
+            <button class="nav-inst-btn" id="next-inst">&gt;</button>
+        </div>
+
+        <!-- SELEÇÃO DE OITAVAS (1 ATÉ 4) -->
+        <div class="ctrl-group">
+            <span class="label-text">Oitavas:</span>
+            <button class="btn btn-oct-count" data-count="1">1</button>
+            <button class="btn btn-oct-count active" data-count="2">2</button>
+            <button class="btn btn-oct-count" data-count="3">3</button>
+            <button class="btn btn-oct-count" data-count="4">4</button>
+        </div>
+
+        <!-- TOGGLE MOSTRAR NOTAS -->
+        <div class="ctrl-group">
+            <span class="label-text">Notas</span>
+            <label class="switch">
+                <input type="checkbox" id="toggle-labels">
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <div id="piano-container"></div>
+
+    <script src="script.js?v=1"></script>
+
+</body>
+</html>
