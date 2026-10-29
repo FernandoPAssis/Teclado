@@ -16,9 +16,19 @@
     <div id="controls-bar">
         <!-- NAVEGAÇÃO DE ALTURA (OITAVA BASE) -->
         <div class="ctrl-group">
-            <button class="btn" id="btn-octave-down">&lt;</button>
-            <button class="btn" id="btn-octave-up">&gt;</button>
+            <button class="btn" id="btn-octave-down" title="Descer Oitava (Mais Grave)">◀ Oit.</button>
+            <button class="btn" id="btn-octave-up" title="Subir Oitava (Mais Agudo)">Oit. ▶</button>
+
+            <!-- Botão de Voltar ao Portal -->
+            <a href="https://fernandopassis.github.io/Portal-principal/index.html" class="btn-voltar-portal">
+                <span class="btn-icon">🏠</span>
+                <span class="btn-text">Voltar ao Portal</span>
+            </a>
         </div>
+
+
+
+
 
         <!-- DROPDOWN DE TIMBRES -->
         <div class="ctrl-group">
@@ -85,6 +95,12 @@
                 <span class="slider"></span>
             </label>
         </div>
+
+        <!-- BOTÃO DE TELA CHEIA -->
+        <div class="ctrl-group">
+            <button class="btn" id="btn-fullscreen" title="Tela Cheia / Ocultar Barra">⛶</button>
+        </div>
+
     </div>
 
     <div id="piano-container"></div>
@@ -92,7 +108,7 @@
     <!-- Tone.js para os Pianos de Cauda Real -->
     <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>-->
     <script src="ajax_libs_tone_14_8_49_Tone.js"></script>
-    <script src="script.js?v=01"></script>
+    <script src="script.js?v=02"></script>
 
 </body>
 </html>

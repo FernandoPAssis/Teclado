@@ -506,3 +506,19 @@
     initTonePianos();
     renderPiano();
 })();
+
+        // --- BOTÃO DE TELA CHEIA (OCULTAR BARRA DO NAVEGADOR) ---
+    var btnFullscreen = document.getElementById('btn-fullscreen');
+    if (btnFullscreen) {
+        btnFullscreen.addEventListener('click', function () {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(function (err) {
+                    console.log("Erro ao tentar entrar em tela cheia:", err);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        });
+    }
