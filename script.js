@@ -15,16 +15,25 @@
     ];
 
     var baseOctave = 4;
-    var numOctaves = 2; // Padrão: 2 Oitavas
-    var currentInstIndex = 0; // Padrão: Piano Acústico
+    var numOctaves = 2;
+    var currentInstIndex = 0;
+    var activeAudioNodes = {};
+
+    // Samplers do Tone.js para os 3 perfis de Piano de Cauda
+    var pianoNormal = null;
+    var pianoVibrante = null;
+    var pianoUltraBrilho = null;
+    var isToneStarted = false;
+
+    // Cache de AudioBuffers para o Piano Acústico Nativo (Opção 2)
     var audioCtx = null;
-    var activeOscillators = {};
+    var audioBufferCache = {};
 
     var container = document.getElementById('piano-container');
     var toggleLabels = document.getElementById('toggle-labels');
     var instSelect = document.getElementById('inst-select');
 
-    function initAudio() {
+    function initAudioContext() {
         if (!audioCtx) {
             var AudioContextClass = window.AudioContext || window.webkitAudioContext;
             if (AudioContextClass) {
@@ -36,11 +45,79 @@
         }
     }
 
+    // MAPA PADRÃO DE SAMPLES DO SALAMANDER GRAND PIANO
+    var sampleUrls = {
+        "A0": "A0.mp3", "C1": "C1.mp3", "D#1": "Ds1.mp3", "F#1": "Fs1.mp3",
+        "A1": "A1.mp3", "C2": "C2.mp3", "D#2": "Ds2.mp3", "F#2": "Fs2.mp3",
+        "A2": "A2.mp3", "C3": "C3.mp3", "D#3": "Ds3.mp3", "F#3": "Fs3.mp3",
+        "A3": "A3.mp3", "C4": "C4.mp3", "D#4": "Ds4.mp3", "F#4": "Fs4.mp3",
+        "A4": "A4.mp3", "C5": "C5.mp3", "D#5": "Ds5.mp3", "F#5": "Fs5.mp3",
+        "A5": "A5.mp3", "C6": "C6.mp3", "D#6": "Ds6.mp3", "F#6": "Fs6.mp3",
+        "A6": "A6.mp3", "C7": "C7.mp3", "D#7": "Ds7.mp3", "F#7": "Fs7.mp3", "A7": "A7.mp3"
+    };
+
+    function initTonePianos() {
+        if (pianoNormal) return;
+
+        var sampleBaseUrl = "samples/";
+        if (window.location.protocol === 'file:') {
+            sampleBaseUrl = "https://tonejs.github.io/audio/salamander/";
+        }
+
+        // 1. PIANO NORMAL (Som Puro do Sample, Aveludado)
+        pianoNormal = new Tone.Sampler({
+            urls: sampleUrls,
+            baseUrl: sampleBaseUrl
+        }).toDestination();
+
+        // 2. PIANO VIBRANTE (Com EQ equilibrado e Compressor)
+        var eqVibrante = new Tone.EQ3({ low: 2, mid: 4, high: 6 });
+        var compVibrante = new Tone.Compressor({ threshold: -24, ratio: 3 });
+
+        pianoVibrante = new Tone.Sampler({
+            urls: sampleUrls,
+            baseUrl: sampleBaseUrl
+        });
+        pianoVibrante.chain(eqVibrante, compVibrante, Tone.Destination);
+
+        // 3. PIANO ULTRA BRILHO & PUNCH (Agudos ao máximo, Exciter e Compressor pesado)
+        var eqUltra = new Tone.EQ3({ low: -4, mid: 9, high: 16 });
+        var compUltra = new Tone.Compressor({ threshold: -32, ratio: 8 });
+        var distUltra = new Tone.Distortion({ distortion: 0.12, wet: 0.3 });
+
+        pianoUltraBrilho = new Tone.Sampler({
+            urls: sampleUrls,
+            baseUrl: sampleBaseUrl
+        });
+        pianoUltraBrilho.chain(eqUltra, compUltra, distUltra, Tone.Destination);
+    }
+
+    // AUDIOBUFFER PLAYER NATIVO VIA FETCH/DECODE
+    async function loadAudioBuffer(url) {
+        if (audioBufferCache[url]) return audioBufferCache[url];
+        try {
+            var response = await fetch(url);
+            var arrayBuffer = await response.arrayBuffer();
+            var decodedData = await audioCtx.decodeAudioData(arrayBuffer);
+            audioBufferCache[url] = decodedData;
+            return decodedData;
+        } catch (e) {
+            console.error("Erro ao carregar AudioBuffer:", e);
+            return null;
+        }
+    }
+
+    function midiToNoteName(midiNumber) {
+        var octave = Math.floor(midiNumber / 12) - 1;
+        var noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        var name = noteNames[midiNumber % 12];
+        return name + octave;
+    }
+
     function noteToFreq(noteIndex) {
         return 440 * Math.pow(2, (noteIndex - 69) / 12);
     }
 
-    // Gerador de Ruído Branco para a Bateria (Caixa e Pratos)
     function createNoiseBuffer() {
         if (!audioCtx) return null;
         var bufferSize = audioCtx.sampleRate * 0.5;
@@ -52,18 +129,61 @@
         return buffer;
     }
 
-    // SÍNTESE DOS TIMBRES E BATERIAS
-    function playNote(midiNumber) {
-        initAudio();
-        if (!audioCtx) return;
-        if (activeOscillators[midiNumber]) return;
+    // DISPARO DE NOTAS DA APLICAÇÃO
+    async function playNote(midiNumber) {
+        initAudioContext();
+        if (activeAudioNodes[midiNumber]) return;
 
-        var freq = noteToFreq(midiNumber);
-        var now = audioCtx.currentTime;
         var inst = parseInt(currentInstIndex, 10);
+        var noteName = midiToNoteName(midiNumber);
 
-        // --- MODO BATERIA ACÚSTICA (16) E ELETRÔNICA 808 (17) ---
-        if (inst === 16 || inst === 17) {
+        // --- 01, 02, 03: PIANOS DE CAUDA REAL (TONE.JS SAMPLERS) ---
+        if (inst === 0 || inst === 1 || inst === 2) {
+            if (!isToneStarted) {
+                await Tone.start();
+                initTonePianos();
+                isToneStarted = true;
+            }
+
+            var targetSampler = pianoNormal;
+            if (inst === 1) targetSampler = pianoVibrante;
+            if (inst === 2) targetSampler = pianoUltraBrilho;
+
+            if (targetSampler) {
+                targetSampler.triggerAttack(noteName);
+                activeAudioNodes[midiNumber] = { mode: 'tone', sampler: targetSampler, note: noteName };
+            }
+            return;
+        }
+
+        // --- 04: PIANO ACÚSTICO (AudioBuffer Nativo) ---
+        if (inst === 3) {
+            var sampleNote = noteName.replace("#", "s");
+            var url = (window.location.protocol === 'file:' ? "https://tonejs.github.io/audio/salamander/" : "samples/") + sampleNote + ".mp3";
+            var buffer = await loadAudioBuffer(url);
+
+            if (buffer && audioCtx) {
+                var source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                var gainNode = audioCtx.createGain();
+                gainNode.gain.setValueAtTime(0.85, audioCtx.currentTime);
+
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                source.start(0);
+
+                activeAudioNodes[midiNumber] = { mode: 'buffer', source: source, gain: gainNode };
+                return;
+            }
+        }
+
+        // --- OUTROS TIMBRES SINTÉTICOS / BATERIA ---
+        if (!audioCtx) return;
+        var now = audioCtx.currentTime;
+        var freq = noteToFreq(midiNumber);
+
+        // Modo Bateria (22 e 23 no select)
+        if (inst === 21 || inst === 22) {
             playDrumSound(midiNumber, inst, now);
             return;
         }
@@ -72,122 +192,122 @@
         var gain = audioCtx.createGain();
 
         switch (inst) {
-            case 0: // Piano Acústico
+            case 4: // 05. Piano Sintético Clássico
                 osc.type = 'triangle';
                 gain.gain.setValueAtTime(0.5, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
                 break;
 
-            case 1: // Piano Elétrico (Rhodes)
+            case 5: // 06. Piano Digital Limpo
+                osc.type = 'triangle';
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.linearRampToValueAtTime(0.7, now + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.2);
+                break;
+
+            case 6: // 07. Piano Elétrico (Rhodes)
                 osc.type = 'sine';
                 gain.gain.setValueAtTime(0.5, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
                 break;
 
-            case 2: // Cravo Clássico
+            case 7: // 08. Cravo Clássico
                 osc.type = 'sawtooth';
                 gain.gain.setValueAtTime(0.4, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
                 break;
 
-            case 3: // Órgão Hammond
-                osc.type = 'square';
-                gain.gain.setValueAtTime(0.3, now);
-                break;
-
-            case 4: // Caixinha de Música
+            case 8: // 09. Caixinha de Música
                 osc.type = 'sine';
                 gain.gain.setValueAtTime(0.7, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 2.0);
                 break;
 
-            case 5: // Violão de Nylon
+            case 9: // 10. Órgão Hammond
+                osc.type = 'square';
+                gain.gain.setValueAtTime(0.3, now);
+                break;
+
+            case 10: // 11. Violão de Nylon
                 osc.type = 'triangle';
                 gain.gain.setValueAtTime(0.5, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 1.0);
                 break;
 
-            case 6: // Violão de Aço
+            case 11: // 12. Violão de Aço
                 osc.type = 'sawtooth';
                 gain.gain.setValueAtTime(0.35, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 1.1);
                 break;
 
-            case 7: // Guitarra Limpa
+            case 12: // 13. Guitarra Limpa
                 osc.type = 'sine';
                 gain.gain.setValueAtTime(0.5, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 1.3);
                 break;
 
-            case 8: // Guitarra com Distorção (Overdrive)
+            case 13: // 14. Guitarra com Distorção
                 osc.type = 'sawtooth';
                 gain.gain.setValueAtTime(0.35, now);
-                // Onda distorcida com atenuação lenta
                 gain.gain.exponentialRampToValueAtTime(0.02, now + 1.5);
                 break;
 
-            case 9: // Baixo Elétrico
+            case 14: // 15. Baixo Elétrico
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq / 2, now); // Oitava abaixo
+                freq = freq / 2;
                 gain.gain.setValueAtTime(0.6, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
                 break;
 
-            case 10: // Orquestra de Cordas (Violino)
+            case 15: // 16. Orquestra de Cordas
                 osc.type = 'sawtooth';
                 gain.gain.setValueAtTime(0.01, now);
                 gain.gain.linearRampToValueAtTime(0.35, now + 0.15);
                 break;
 
-            case 11: // Harpa Angelical
+            case 16: // 17. Harpa Angelical
                 osc.type = 'triangle';
                 gain.gain.setValueAtTime(0.6, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
                 break;
 
-            case 12: // Flauta Doce
+            case 17: // 18. Flauta Doce
                 osc.type = 'sine';
                 gain.gain.setValueAtTime(0.01, now);
                 gain.gain.linearRampToValueAtTime(0.4, now + 0.08);
                 break;
 
-            case 13: // Saxofone Alto
+            case 18: // 19. Saxofone Alto
                 osc.type = 'sawtooth';
                 gain.gain.setValueAtTime(0.01, now);
                 gain.gain.linearRampToValueAtTime(0.4, now + 0.06);
                 break;
 
-            case 14: // Trompete de Metal
+            case 19: // 20. Trompete de Metal
                 osc.type = 'sawtooth';
                 gain.gain.setValueAtTime(0.45, now);
                 break;
 
-            case 15: // Gaita de Boca
+            case 20: // 21. Gaita de Boca
                 osc.type = 'square';
                 gain.gain.setValueAtTime(0.25, now);
                 break;
 
-            case 18: // Xilofone / Marimba
+            case 23: // 24. Xilofone / Marimba
                 osc.type = 'sine';
                 gain.gain.setValueAtTime(0.7, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
                 break;
 
-            case 19: // Steel Drum
+            case 24: // 25. Steel Drum
                 osc.type = 'triangle';
                 gain.gain.setValueAtTime(0.6, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
                 break;
 
-            case 20: // 8-Bit Game Boy
+            case 25: // 26. 8-Bit Game Boy
                 osc.type = 'square';
                 gain.gain.setValueAtTime(0.3, now);
-                break;
-
-            case 21: // Synth Pad (Névoa)
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.01, now);
-                gain.gain.linearRampToValueAtTime(0.4, now + 0.25);
                 break;
 
             default:
@@ -197,26 +317,20 @@
                 break;
         }
 
-        if (inst !== 9) {
-            osc.frequency.setValueAtTime(freq, now);
-        }
-
+        osc.frequency.setValueAtTime(freq, now);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
 
-        activeOscillators[midiNumber] = { osc: osc, gain: gain };
+        activeAudioNodes[midiNumber] = { mode: 'synth', osc: osc, gain: gain };
     }
 
-    // SIMULADOR DE BATERIA
     function playDrumSound(midiNumber, instType, now) {
         var noteInOctave = midiNumber % 12;
-
         if (noteInOctave === 0) {
-            // BUMBO (Kick)
             var osc = audioCtx.createOscillator();
             var gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(instType === 17 ? 120 : 150, now);
+            osc.frequency.setValueAtTime(instType === 22 ? 120 : 150, now);
             osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.25);
             gain.gain.setValueAtTime(0.8, now);
             gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
@@ -225,7 +339,6 @@
             osc.start();
             osc.stop(now + 0.25);
         } else if (noteInOctave === 2 || noteInOctave === 3) {
-            // CAIXA (Snare)
             var noise = audioCtx.createBufferSource();
             noise.buffer = createNoiseBuffer();
             var noiseFilter = audioCtx.createBiquadFilter();
@@ -242,26 +355,7 @@
 
             noise.start();
             noise.stop(now + 0.2);
-        } else if (noteInOctave === 4 || noteInOctave === 5) {
-            // PRATO (Hi-Hat)
-            var noise = audioCtx.createBufferSource();
-            noise.buffer = createNoiseBuffer();
-            var filter = audioCtx.createBiquadFilter();
-            filter.type = 'highpass';
-            filter.frequency.value = 5000;
-
-            var gain = audioCtx.createGain();
-            gain.gain.setValueAtTime(0.3, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
-
-            noise.connect(filter);
-            filter.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            noise.start();
-            noise.stop(now + 0.08);
         } else {
-            // TOMS & PERCUSSÃO (Tons variados)
             var osc = audioCtx.createOscillator();
             var gain = audioCtx.createGain();
             var tomFreq = 100 + (noteInOctave * 25);
@@ -276,30 +370,45 @@
         }
     }
 
+    // INTERRUPÇÃO E SUAVIZAÇÃO AO SOLTAR A TECLA
     function stopNote(midiNumber) {
-        if (activeOscillators[midiNumber]) {
-            var item = activeOscillators[midiNumber];
-            var now = audioCtx ? audioCtx.currentTime : 0;
-            if (audioCtx) {
-                item.gain.gain.setValueAtTime(item.gain.gain.value, now);
-                item.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-                setTimeout(function () {
-                    try { item.osc.stop(); } catch (e) { }
-                }, 100);
+        if (activeAudioNodes[midiNumber]) {
+            var item = activeAudioNodes[midiNumber];
+
+            if (item.mode === 'tone') {
+                if (item.sampler) {
+                    item.sampler.triggerRelease(item.note);
+                }
+            } else if (item.mode === 'buffer') {
+                if (audioCtx && item.gain) {
+                    item.gain.gain.setValueAtTime(item.gain.gain.value, audioCtx.currentTime);
+                    item.gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+                    setTimeout(function () {
+                        try { item.source.stop(); } catch (e) { }
+                    }, 130);
+                }
+            } else if (item.mode === 'synth') {
+                if (audioCtx && item.gain) {
+                    var now = audioCtx.currentTime;
+                    item.gain.gain.setValueAtTime(item.gain.gain.value, now);
+                    item.gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+                    setTimeout(function () {
+                        try { item.osc.stop(); } catch (e) { }
+                    }, 100);
+                }
             }
-            delete activeOscillators[midiNumber];
+
+            delete activeAudioNodes[midiNumber];
         }
     }
 
     function renderPiano() {
         container.innerHTML = '';
-
         var totalWhiteKeys = numOctaves * 7;
         var whiteWidthPercent = 100 / totalWhiteKeys;
         var blackWidthPercent = whiteWidthPercent * 0.65;
 
         container.style.setProperty('--black-width', blackWidthPercent + '%');
-
         var startMidi = (baseOctave * 12) + 12;
 
         for (var oct = 0; oct < numOctaves; oct++) {
@@ -350,22 +459,14 @@
         el.addEventListener('mouseleave', triggerRelease, false);
     }
 
-    // CONTROLES DE OITAVA BASE
     document.getElementById('btn-octave-down').addEventListener('click', function () {
-        if (baseOctave > 1) {
-            baseOctave--;
-            renderPiano();
-        }
+        if (baseOctave > 1) { baseOctave--; renderPiano(); }
     });
 
     document.getElementById('btn-octave-up').addEventListener('click', function () {
-        if (baseOctave < 6) {
-            baseOctave++;
-            renderPiano();
-        }
+        if (baseOctave < 6) { baseOctave++; renderPiano(); }
     });
 
-    // BOTÕES DE OITAVA (1 A 4)
     var octBtns = document.querySelectorAll('.btn-oct-count');
     for (var b = 0; b < octBtns.length; b++) {
         octBtns[b].addEventListener('click', function () {
@@ -376,13 +477,11 @@
         });
     }
 
-    // TROCA DE INSTRUMENTOS (DROPDOWN E SETAS)
     instSelect.addEventListener('change', function () {
         currentInstIndex = parseInt(this.value, 10);
     });
 
     document.getElementById('prev-inst').addEventListener('click', function () {
-        var options = instSelect.options;
         var selectedIndex = instSelect.selectedIndex;
         if (selectedIndex > 0) {
             instSelect.selectedIndex = selectedIndex - 1;
@@ -400,12 +499,10 @@
     });
 
     toggleLabels.addEventListener('change', function () {
-        if (this.checked) {
-            container.classList.add('show-labels');
-        } else {
-            container.classList.remove('show-labels');
-        }
+        if (this.checked) { container.classList.add('show-labels'); }
+        else { container.classList.remove('show-labels'); }
     });
 
+    initTonePianos();
     renderPiano();
 })();

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Teclado Virtual com Timbres e Bateria</title>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=01">
 </head>
 <body>
 
@@ -25,37 +25,43 @@
             <button class="nav-inst-btn" id="prev-inst">&lt;</button>
             <div class="inst-select-wrapper">
                 <select id="inst-select">
-                    <optgroup label="🎹 PIANOS & TECLADOS">
-                        <option value="0">01. Piano Acústico</option>
-                        <option value="1">02. Piano Elétrico (Rhodes)</option>
-                        <option value="2">03. Cravo Clássico</option>
-                        <option value="4">04. Caixinha de Música</option>
-                        <option value="3">05. Órgão Hammond</option>
+                    <optgroup label="🎹 PIANOS DE CAUDA REAL (SAMPLES)">
+                        <option value="0">01. Piano de Cauda (Brilho Normal)</option>
+                        <option value="1">02. Piano de Cauda (Vibrante)</option>
+                        <option value="2">03. Piano de Cauda (Ultra Brilho & Punch)</option>
+                        <option value="3">04. Piano Acústico (AudioBuffer)</option>
+                    </optgroup>
+                    <optgroup label="🎹 PIANOS SINTÉTICOS & DEMAIS TECLADOS">
+                        <option value="4">05. Piano Sintético Clássico</option>
+                        <option value="5">06. Piano Digital Limpo</option>
+                        <option value="6">07. Piano Elétrico (Rhodes)</option>
+                        <option value="7">08. Cravo Clássico</option>
+                        <option value="8">09. Caixinha de Música</option>
+                        <option value="9">10. Órgão Hammond</option>
                     </optgroup>
                     <optgroup label="🎸 CORDAS, GUITARRAS & BAIXO">
-                        <option value="5">06. Violão de Nylon</option>
-                        <option value="6">07. Violão de Aço</option>
-                        <option value="7">08. Guitarra Limpa</option>
-                        <option value="8">09. Guitarra com Distorção</option>
-                        <option value="9">10. Baixo Elétrico</option>
-                        <option value="10">11. Orquestra de Cordas</option>
-                        <option value="11">12. Harpa Angelical</option>
+                        <option value="10">11. Violão de Nylon</option>
+                        <option value="11">12. Violão de Aço</option>
+                        <option value="12">13. Guitarra Limpa</option>
+                        <option value="13">14. Guitarra com Distorção</option>
+                        <option value="14">15. Baixo Elétrico</option>
+                        <option value="15">16. Orquestra de Cordas</option>
+                        <option value="16">17. Harpa Angelical</option>
                     </optgroup>
                     <optgroup label="🎷 SOPROS & METAIS">
-                        <option value="12">13. Flauta Doce</option>
-                        <option value="13">14. Saxofone Alto</option>
-                        <option value="14">15. Trompete de Metal</option>
-                        <option value="15">16. Gaita de Boca</option>
+                        <option value="17">18. Flauta Doce</option>
+                        <option value="18">19. Saxofone Alto</option>
+                        <option value="19">20. Trompete de Metal</option>
+                        <option value="20">21. Gaita de Boca</option>
                     </optgroup>
                     <optgroup label="🥁 BATERIAS & PERCUSSÃO">
-                        <option value="16">17. Bateria Acústica</option>
-                        <option value="17">18. Bateria Eletrônica 808</option>
-                        <option value="18">19. Xilofone / Marimba</option>
-                        <option value="19">20. Steel Drum (Caribe)</option>
+                        <option value="21">22. Bateria Acústica</option>
+                        <option value="22">23. Bateria Eletrônica 808</option>
+                        <option value="23">24. Xilofone / Marimba</option>
+                        <option value="24">25. Steel Drum (Caribe)</option>
                     </optgroup>
                     <optgroup label="👾 SINTETIZADORES & RETRÔ">
-                        <option value="20">21. 8-Bit Game Boy</option>
-                        <option value="21">22. Synth Pad (Névoa)</option>
+                        <option value="25">26. 8-Bit Game Boy / Synth Pad</option>
                     </optgroup>
                 </select>
             </div>
@@ -83,7 +89,10 @@
 
     <div id="piano-container"></div>
 
-    <script src="script.js?v=1"></script>
+    <!-- Tone.js para os Pianos de Cauda Real -->
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>-->
+    <script src="ajax_libs_tone_14_8_49_Tone.js"></script>
+    <script src="script.js?v=01"></script>
 
 </body>
 </html>

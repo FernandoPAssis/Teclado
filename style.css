@@ -317,3 +317,21 @@ input:checked + .slider {
     border: 1px solid #555;
 }
 
+/* AJUSTE AUTOMÁTICO PARA TELA DE TELEMÓVEL / POUCO ESPAÇO */
+@media (max-width: 900px), (max-height: 500px) {
+    .key.white .note-label {
+        font-size: 9px;
+        padding: 2px 3px;
+        border-radius: 3px;
+        border-width: 0.5px;
+        margin-bottom: 2px;
+    }
+
+    .key.black .note-label {
+        font-size: 7px;
+        padding: 1px 2px;
+        border-radius: 2px;
+        border-width: 0.5px;
+        margin-bottom: 2px;
+    }
+}
